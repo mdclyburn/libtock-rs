@@ -4,6 +4,7 @@ use crate::console::ConsoleDriver;
 use crate::ctap::CtapDriverFactory;
 use crate::gpio::GpioDriverFactory;
 use crate::hmac::HmacDriverFactory;
+use crate::ism_radio::IsmRadioDriver;
 use crate::leds::LedsDriverFactory;
 use crate::result::OtherError;
 use crate::result::TockError;
@@ -37,6 +38,7 @@ pub struct Drivers {
     pub temperature_sensor: TemperatureSensor,
     pub humidity_sensor: HumiditySensor,
     pub ninedof: NinedofDriver,
+    pub ism_radio: IsmRadioDriver,
 }
 
 /// Retrieve [Drivers] struct. Returns struct only once.
@@ -83,6 +85,7 @@ const DRIVERS: Drivers = Drivers {
     temperature_sensor: TemperatureSensor,
     humidity_sensor: HumiditySensor,
     ninedof: NinedofDriver,
+    ism_radio: IsmRadioDriver {  }
 };
 
 pub struct DriversAlreadyTakenError;
