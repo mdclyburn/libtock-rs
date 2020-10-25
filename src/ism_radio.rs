@@ -12,7 +12,7 @@ mod opmode {
     pub const SLEEP: usize = 0;
     // pub const STANDBY: usize = 1;
     // pub const FREQUENCYSYNTHESIZER: usize = 2;
-    // pub const TRANSMIT: usize = 3;
+    pub const TRANSMIT: usize = 3;
     pub const RECEIVE: usize = 4;
 }
 
@@ -28,21 +28,25 @@ impl IsmRadioDriver {
         Ok(r)
     }
 
-    pub fn sleep(&self) -> TockResult<()> {
-        syscalls::command(
-            DRIVER_NUMBER,
-            command::SET_MODE,
-            opmode::SLEEP,
-            0)?;
-        Ok(())
-    }
-
-    pub fn receive(&self) -> TockResult<usize> {
+    fn set_mode(&self, mode: usize) -> TockResult<usize> {
         let r = syscalls::command(
             DRIVER_NUMBER,
             command::SET_MODE,
-            opmode::RECEIVE,
+            mode,
             0)?;
+
         Ok(r)
+    }
+
+    pub fn sleep(&self) -> TockResult<usize> {
+        self.set_mode(opmode::SLEEP)
+    }
+
+    pub fn receive(&self) -> TockResult<usize> {
+        self.set_mode(opmode::RECEIVE)
+    }
+
+    pub fn transmit(&self) -> TockResult<usize> {
+        self.set_mode(opmode::TRANSMIT)
     }
 }
