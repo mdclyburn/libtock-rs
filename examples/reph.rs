@@ -34,13 +34,23 @@ async fn main() -> TockResult<()> {
 
     for setting in settings.iter() {
         while drivers.ism_radio.status()? != 0 {
-            timer.sleep(Duration::from_ms(50)).await?;
+            // timer.sleep(Duration::from_ms(50)).await?;
             println!("still busy...");
         }
 
         timer.sleep(Duration::from_ms(100)).await?;
         println!("setting {}", setting.0);
         drivers.ism_radio.write(setting.0, setting.1)?;
+    }
+
+    for i in 1..=4 {
+        drivers.ism_radio.read(i)?;
+        while drivers.ism_radio.status()? != 0 {
+            // timer.sleep(Duration::from_ms(50)).await?;
+            println!("still busy...");
+        }
+        let val = drivers.ism_radio.get_read()?;
+        println!("{}: {}", i, val);
     }
 
     println!("setup complete\n");

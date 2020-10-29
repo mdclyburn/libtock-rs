@@ -72,6 +72,10 @@ impl IsmRadioDriver {
         IsmRadioDriver::command(command::WRITE, address as usize, value as usize)
     }
 
+    pub fn get_read(&self) -> TockResult<usize> {
+        IsmRadioDriver::command(6, 0, 0)
+    }
+
     pub fn sample_fill(&self) -> TockResult<usize> {
         IsmRadioDriver::command(50, 0, 0)
     }
