@@ -38,6 +38,10 @@ impl IsmRadioDriver {
         Ok(r)
     }
 
+    pub fn status(&self) -> TockResult<usize> {
+        Ok(IsmRadioDriver::command(command::STATUS, 0, 0)?)
+    }
+
     fn set_mode(&self, mode: usize) -> TockResult<usize> {
         let r = syscalls::command(
             DRIVER_NUMBER,
@@ -66,5 +70,9 @@ impl IsmRadioDriver {
 
     pub fn write(&self, address: u8, value: u8) -> TockResult<usize> {
         IsmRadioDriver::command(command::WRITE, address as usize, value as usize)
+    }
+
+    pub fn sample_fill(&self) -> TockResult<usize> {
+        IsmRadioDriver::command(50, 0, 0)
     }
 }
