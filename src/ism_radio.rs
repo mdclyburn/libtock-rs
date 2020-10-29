@@ -68,6 +68,10 @@ impl IsmRadioDriver {
         self.set_mode(opmode::TRANSMIT)
     }
 
+    pub fn read(&self, address: u8) -> TockResult<usize> {
+        IsmRadioDriver::command(command::READ, address as usize, 0)
+    }
+
     pub fn write(&self, address: u8, value: u8) -> TockResult<usize> {
         IsmRadioDriver::command(command::WRITE, address as usize, value as usize)
     }
