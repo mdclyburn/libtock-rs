@@ -24,8 +24,10 @@ async fn main() -> TockResult<()> {
     timer.sleep(Duration::from_ms(100)).await?;
 
     // Recommended settings
-    let settings: [(u8, u8); 1] = [
-        (0x01, 0x00),
+    let settings: [(u8, u8); 3] = [
+        (0x3e, 0b10101111),
+        (0x40, 0b01010011),
+        (0x42, 0b11011001),
 
         // (0x18, 0x88),
         // (0x19, 0x55),
@@ -34,9 +36,10 @@ async fn main() -> TockResult<()> {
         // (0x6f, 0x30)
     ];
 
-    drivers.ism_radio.sleep()?;
+    // drivers.ism_radio.standby()?;
 
-    for (addr, _) in settings.iter() {
+    for (addr, _val) in settings.iter() {
+        write(&drivers.ism_radio, &timer, *addr, *val).await?;
         // while drivers.ism_radio.status()? != 0 {
         //     timer.sleep(Duration::from_ms(25)).await?;
         // }
@@ -47,7 +50,7 @@ async fn main() -> TockResult<()> {
         // }
         // println!("{:x}: {:8b}", *addr, drivers.ism_radio.get_read()?);
         let x = read(&drivers.ism_radio, &timer, *addr).await?;
-        println!("{:x}: {:8b}", *addr, x);
+        println!("{:x}: {:x}", *addr, x);
     }
 
     // for setting in settings.iter() {
