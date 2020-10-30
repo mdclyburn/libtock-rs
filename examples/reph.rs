@@ -24,7 +24,7 @@ async fn main() -> TockResult<()> {
     timer.sleep(Duration::from_ms(100)).await?;
 
     // Recommended settings
-    let settings = [
+    let settings: [(u8, u8); 1] = [
         (0x01, 0x00),
 
         // (0x18, 0x88),
@@ -37,15 +37,17 @@ async fn main() -> TockResult<()> {
     drivers.ism_radio.sleep()?;
 
     for (addr, _) in settings.iter() {
-        while drivers.ism_radio.status()? != 0 {
-            timer.sleep(Duration::from_ms(25)).await?;
-        }
+        // while drivers.ism_radio.status()? != 0 {
+        //     timer.sleep(Duration::from_ms(25)).await?;
+        // }
 
-        drivers.ism_radio.read(*addr)?;
-        while drivers.ism_radio.status()? != 0 {
-            timer.sleep(Duration::from_ms(25)).await?;
-        }
-        println!("{:x}: {:8b}", *addr, drivers.ism_radio.get_read()?);
+        // drivers.ism_radio.read(*addr)?;
+        // while drivers.ism_radio.status()? != 0 {
+        //     timer.sleep(Duration::from_ms(25)).await?;
+        // }
+        // println!("{:x}: {:8b}", *addr, drivers.ism_radio.get_read()?);
+        let x = read(&drivers.ism_radio, &timer, *addr).await?;
+        println!("{:x}: {:8b}", *addr, x);
     }
 
     // for setting in settings.iter() {
@@ -84,4 +86,32 @@ async fn main() -> TockResult<()> {
 
         // println!("\n");
     }
+}
+
+#[allow(unused)]
+async fn write<'a>(radio: &libtock::ism_radio::IsmRadioDriver,
+               timer: &libtock::timer::ParallelSleepDriver<'a>,
+               address: u8, value: u8) -> TockResult<usize> {
+    while radio.status()? != 0 {
+        timer.sleep(Duration::from_ms(25 as usize)).await?;
+    }
+
+    radio.write(address, value)
+}
+
+#[allow(unused)]
+async fn read<'a>(radio: &libtock::ism_radio::IsmRadioDriver,
+              timer: &libtock::timer::ParallelSleepDriver<'a>,
+              address: u8) -> TockResult<usize> {
+    while radio.status()? != 0 {
+        timer.sleep(Duration::from_ms(25 as usize)).await?;
+    }
+
+    radio.read(address)?;
+
+    while radio.status()? != 0 {
+        timer.sleep(Duration::from_ms(25 as usize)).await?;
+    }
+
+    radio.get_read()
 }
