@@ -22,6 +22,20 @@ mod opmode {
     pub const RECEIVE: usize = 4;
 }
 
+#[allow(unused, non_upper_case_globals)]
+pub mod register {
+    pub const PacketConfig1: u8 = 0x37;
+    pub const PayloadLength: u8 = 0x38;
+    pub const PacketConfig2: u8 = 0x3D;
+
+    mod mask {
+        pub const PacketConfig1_AddressFiltering: u8 = 0b00000110;
+        pub const PacketConfig1_PacketFormat: u8 = 0b10000000;
+
+        pub const PacketConfig2_AESOn: u8 = 0b00000001;
+    }
+}
+
 pub struct IsmRadioDriver {  }
 
 impl IsmRadioDriver {

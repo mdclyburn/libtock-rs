@@ -3,6 +3,7 @@
 use libtock::result::TockResult;
 use libtock::timer::Duration;
 use libtock::println;
+use libtock::ism_radio;
 
 #[libtock::main]
 async fn main() -> TockResult<()> {
@@ -23,11 +24,24 @@ async fn main() -> TockResult<()> {
     drivers.ism_radio.reset()?;
     timer.sleep(Duration::from_ms(100)).await?;
 
+    drivers.ism_radio.standby()?;
+
     // Recommended settings
-    let settings: [(u8, u8); 3] = [
+    // disable AES
+    // use fixed-length packets
+    // disable addressing
+    // set payload length to 64
+    let settings = [
         (0x3e, 0b10101111),
         (0x40, 0b01010011),
         (0x42, 0b11011001),
+        (0x27, 0),
+        (0x28, 0),
+        (0x2e, 0),
+        (0x37, 0),
+        (0x38, 0),
+
+        (ism_radio::register::PayloadLength, 64),
 
         // (0x18, 0x88),
         // (0x19, 0x55),
@@ -39,7 +53,7 @@ async fn main() -> TockResult<()> {
     // drivers.ism_radio.standby()?;
 
     for (addr, _val) in settings.iter() {
-        write(&drivers.ism_radio, &timer, *addr, *val).await?;
+        // write(&drivers.ism_radio, &timer, *addr, *val).await?;
         // while drivers.ism_radio.status()? != 0 {
         //     timer.sleep(Duration::from_ms(25)).await?;
         // }
