@@ -3,6 +3,7 @@
 use libtock::result::TockResult;
 use libtock::timer::Duration;
 use libtock::println;
+#[allow(unused_imports)]
 use libtock::ism_radio;
 
 #[libtock::main]
@@ -23,49 +24,52 @@ async fn main() -> TockResult<()> {
 
     drivers.ism_radio.reset()?;
     timer.sleep(Duration::from_ms(100)).await?;
-
     drivers.ism_radio.standby()?;
 
-    // Recommended settings
-    // disable AES
-    // use fixed-length packets
-    // disable addressing
-    // set payload length to 64
-    let settings = [
-        (0x3e, 0b10101111),
-        (0x40, 0b01010011),
-        (0x42, 0b11011001),
-        (0x27, 0),
-        (0x28, 0),
-        (0x2e, 0),
-        (0x37, 0),
-        (0x38, 0),
+    // Radio configuration ==============================
+    // - disable AES
+    modify(&drivers.ism_radio,
+           &timer,
+           ism_radio::register::PacketConfig2,
+           ism_radio::register::mask::PacketConfig2_AESOn,
+           0).await?;
 
-        (ism_radio::register::PayloadLength, 64),
+    // - use fixed-length packets
+    modify(&drivers.ism_radio,
+           &timer,
+           ism_radio::register::PacketConfig1,
+           ism_radio::register::mask::PacketConfig1_PacketFormat,
+           0).await?;
 
-        // (0x18, 0x88),
-        // (0x19, 0x55),
-        // (0x1a, 0x8B),
-        // (0x29, 0xe4),
-        // (0x6f, 0x30)
-    ];
+    // - set payload length to 64
+    write(&drivers.ism_radio,
+          &timer,
+          ism_radio::register::PayloadLength,
+          64).await?;
 
-    // drivers.ism_radio.standby()?;
+    // Enumerate registers and show their values.
+    // println!("enumerating registers...");
+    // for addr in 0x3eu8..=0x42 {
+    //     let val = read(&drivers.ism_radio, &timer, addr).await?;
+    //     println!("{:02X} | {:02X} | {:08b}", addr, val, val);
+    // }
 
-    for (addr, _val) in settings.iter() {
-        // write(&drivers.ism_radio, &timer, *addr, *val).await?;
-        // while drivers.ism_radio.status()? != 0 {
-        //     timer.sleep(Duration::from_ms(25)).await?;
-        // }
+    // for (addr, val) in &settings {
+    //     write(&drivers.ism_radio, &timer, *addr, *val).await?;
+    // }
 
-        // drivers.ism_radio.read(*addr)?;
-        // while drivers.ism_radio.status()? != 0 {
-        //     timer.sleep(Duration::from_ms(25)).await?;
-        // }
-        // println!("{:x}: {:8b}", *addr, drivers.ism_radio.get_read()?);
-        let x = read(&drivers.ism_radio, &timer, *addr).await?;
-        println!("{:x}: {:x}", *addr, x);
-    }
+    // println!("enumerating registers...");
+    // for addr in 0x3eu8..=0x42 {
+    //     let val = read(&drivers.ism_radio, &timer, addr).await?;
+    //     println!("{:02X} | {:02X} | {:08b}", addr, val, val);
+    // }
+
+    // for (addr, _val) in settings.iter() {
+    //     write(&drivers.ism_radio, &timer, *addr, *val).await?;
+
+    //     let x = read(&drivers.ism_radio, &timer, *addr).await?;
+    //     println!("{:x}: {:x}", *addr, x);
+    // }
 
     // for setting in settings.iter() {
     //     while drivers.ism_radio.status()? != 0 {
@@ -81,27 +85,57 @@ async fn main() -> TockResult<()> {
     println!("setup complete\n");
 
     loop {
-        // let r = drivers.ism_radio.standby()?;
-        // println!("  - Return: {}", r);
-        // led0.off()?;
-        // led1.on()?;
-        // timer.sleep(Duration::from_ms(1000)).await?;
+        println!("Standby");
+        drivers.ism_radio.standby()?;
+        timer.sleep(Duration::from_ms(1000)).await?;
+        let mode = read(&drivers.ism_radio, &timer, ism_radio::register::OpMode).await?;
+        println!("Mode:      {:08b}", mode);
 
-        // println!("Transmit");
-        // let r = drivers.ism_radio.transmit()?;
-        // println!("  - Status: {}", drivers.ism_radio.status()?);
-        // println!("  - Return: {}", r);
-        // led0.on()?;
-        // led1.off()?;
-        // timer.sleep(Duration::from_ms(1000)).await?;
+        let mut irq1 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags1).await?;
+        println!("IRQFlags1: {:08b}", irq1);
+        let irq2 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags2).await?;
+        println!("IRQFlags2: {:08b}", irq2);
+        timer.sleep(Duration::from_ms(3000)).await?;
 
-        // println!("Fill FIFO");
-        // let r = drivers.ism_radio.sample_fill()?;
-        // println!("  - Status: {}", drivers.ism_radio.status()?);
-        // println!("  - Return: {}", r);
-        // timer.sleep(Duration::from_ms(1000)).await?;
+        while irq1 & 1 << 7 == 0 {
+            println!("    mode not ready...");
+            irq1 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags1).await?;
+            timer.sleep(Duration::from_ms(250)).await?;
+        }
 
-        // println!("\n");
+        println!("");
+
+        println!("Fill FIFO");
+        drivers.ism_radio.sample_fill(0b10010110, 64)?;
+        timer.sleep(Duration::from_ms(1000)).await?;
+
+        let irq1 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags1).await?;
+        println!("IRQFlags1: {:08b}", irq1);
+        let irq2 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags2).await?;
+        println!("IRQFlags2: {:08b}", irq2);
+        timer.sleep(Duration::from_ms(2000)).await?;
+
+        println!("");
+
+        println!("Transmit");
+        drivers.ism_radio.transmit()?;
+        timer.sleep(Duration::from_ms(1000)).await?;
+        let mode = read(&drivers.ism_radio, &timer, ism_radio::register::OpMode).await?;
+        println!("Mode:      {:08b}", mode);
+
+        let mut irq1 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags1).await?;
+        println!("IRQFlags1: {:08b}", irq1);
+        let irq2 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags2).await?;
+        println!("IRQFlags2: {:08b}", irq2);
+        timer.sleep(Duration::from_ms(3000)).await?;
+
+        while irq1 & 1 << 7 == 0 {
+            println!("    mode not ready...");
+            irq1 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags1).await?;
+            timer.sleep(Duration::from_ms(250)).await?;
+        }
+
+        println!("");
     }
 }
 
@@ -118,8 +152,8 @@ async fn write<'a>(radio: &libtock::ism_radio::IsmRadioDriver,
 
 #[allow(unused)]
 async fn read<'a>(radio: &libtock::ism_radio::IsmRadioDriver,
-              timer: &libtock::timer::ParallelSleepDriver<'a>,
-              address: u8) -> TockResult<usize> {
+                  timer: &libtock::timer::ParallelSleepDriver<'a>,
+                  address: u8) -> TockResult<usize> {
     while radio.status()? != 0 {
         timer.sleep(Duration::from_ms(25 as usize)).await?;
     }
@@ -131,4 +165,23 @@ async fn read<'a>(radio: &libtock::ism_radio::IsmRadioDriver,
     }
 
     radio.get_read()
+}
+
+#[allow(unused)]
+async fn modify<'a>(radio: &libtock::ism_radio::IsmRadioDriver,
+                    timer: &libtock::timer::ParallelSleepDriver<'a>,
+                    address: u8,
+                    mask: u8,
+                    mut value: u8) -> TockResult<usize> {
+    let mut m_shift = mask;
+    while (m_shift & 1) == 0 {
+        m_shift = m_shift >> 1;
+        value = value << 1;
+    }
+
+    let current_value = read(radio, timer, address).await? as u8;
+    let new_value = (current_value & !mask) | value;
+    println!("Modifying 0x{:02X}: {:08b} -> {:08b}", address, current_value, new_value);
+
+    radio.write(address, new_value)
 }

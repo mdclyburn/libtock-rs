@@ -24,11 +24,14 @@ mod opmode {
 
 #[allow(unused, non_upper_case_globals)]
 pub mod register {
+    pub const OpMode: u8        = 0x01;
+    pub const IRQFlags1: u8     = 0x27;
+    pub const IRQFlags2: u8     = 0x28;
     pub const PacketConfig1: u8 = 0x37;
     pub const PayloadLength: u8 = 0x38;
     pub const PacketConfig2: u8 = 0x3D;
 
-    mod mask {
+    pub mod mask {
         pub const PacketConfig1_AddressFiltering: u8 = 0b00000110;
         pub const PacketConfig1_PacketFormat: u8 = 0b10000000;
 
@@ -94,7 +97,7 @@ impl IsmRadioDriver {
         IsmRadioDriver::command(6, 0, 0)
     }
 
-    pub fn sample_fill(&self) -> TockResult<usize> {
-        IsmRadioDriver::command(50, 0, 0)
+    pub fn sample_fill(&self, byte: u8, len: u8) -> TockResult<usize> {
+        IsmRadioDriver::command(50, byte as usize, len as usize)
     }
 }
