@@ -106,7 +106,7 @@ async fn main() -> TockResult<()> {
             timer.sleep(Duration::from_ms(250)).await?;
         }
 
-        for _i in 0..3 {
+        for _i in 0..10 {
             println!("Energy: {}", drivers.energy_account.total_usage()?);
             timer.sleep(Duration::from_ms(150)).await?;
         }
@@ -143,7 +143,7 @@ async fn main() -> TockResult<()> {
             timer.sleep(Duration::from_ms(250)).await?;
         }
 
-        for _i in 0..3 {
+        for _i in 0..10 {
             println!("Energy: {}", drivers.energy_account.total_usage()?);
             timer.sleep(Duration::from_ms(150)).await?;
         }
