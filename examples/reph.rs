@@ -26,6 +26,9 @@ async fn main() -> TockResult<()> {
     timer.sleep(Duration::from_ms(100)).await?;
     drivers.ism_radio.standby()?;
 
+    println!("Energy account is available: {}", drivers.energy_account.is_available()?);
+    println!("Current value: {}", drivers.energy_account.total_usage()?);
+
     // Radio configuration ==============================
     // - disable AES
     modify(&drivers.ism_radio,
@@ -103,6 +106,11 @@ async fn main() -> TockResult<()> {
             timer.sleep(Duration::from_ms(250)).await?;
         }
 
+        for _i in 0..3 {
+            println!("Energy: {}", drivers.energy_account.total_usage()?);
+            timer.sleep(Duration::from_ms(150)).await?;
+        }
+
         println!("");
 
         println!("Fill FIFO");
@@ -133,6 +141,11 @@ async fn main() -> TockResult<()> {
             println!("    mode not ready...");
             irq1 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags1).await?;
             timer.sleep(Duration::from_ms(250)).await?;
+        }
+
+        for _i in 0..3 {
+            println!("Energy: {}", drivers.energy_account.total_usage()?);
+            timer.sleep(Duration::from_ms(150)).await?;
         }
 
         println!("");

@@ -39,7 +39,7 @@ pub mod register {
     }
 }
 
-pub struct IsmRadioDriver {  }
+pub struct IsmRadioDriver;
 
 impl IsmRadioDriver {
     fn command(command: usize, arg1: usize, arg2: usize) -> TockResult<usize> {
