@@ -47,68 +47,50 @@ async fn main() -> TockResult<()> {
           ism_radio::register::PayloadLength,
           64).await?;
 
+    timer.sleep(Duration::from_ms(1000)).await?;
+
     // Enumerate registers and show their values.
-    println!("enumerating registers...");
-    for addr in 0x27u8..=0x42 {
-        let val = read(&drivers.ism_radio, &timer, addr).await?;
-        println!("{:02X} | {:02X} | {:08b}", addr, val, val);
-    }
+    // println!("enumerating registers...");
+    // for addr in 0x27u8..=0x42 {
+    //     let val = read(&drivers.ism_radio, &timer, addr).await?;
+    //     println!("{:02X} | {:02X} | {:08b}", addr, val, val);
+    // }
 
-    println!("setup complete\n");
+    println!("Setup complete.");
 
-    led1.on()?;
     loop {
-        println!("Standby");
-        drivers.ism_radio.standby()?;
-        timer.sleep(Duration::from_ms(1000)).await?;
-        let mode = read(&drivers.ism_radio, &timer, ism_radio::register::OpMode).await?;
-        println!("Mode:      {:08b}", mode);
-
-        let mut irq1 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags1).await?;
-        println!("IRQFlags1: {:08b}", irq1);
-        let irq2 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags2).await?;
-        println!("IRQFlags2: {:08b}", irq2);
-        timer.sleep(Duration::from_ms(3000)).await?;
-
-        while irq1 & 1 << 7 == 0 {
-            println!("    mode not ready...");
-            irq1 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags1).await?;
-            timer.sleep(Duration::from_ms(20)).await?;
-        }
-
-        println!("");
-
-        println!("Fill FIFO");
         drivers.ism_radio.sample_fill(0b10010110, 64)?;
-        timer.sleep(Duration::from_ms(1000)).await?;
+        timer.sleep(Duration::from_ms(100)).await?;
 
-        let irq1 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags1).await?;
-        println!("IRQFlags1: {:08b}", irq1);
-        let irq2 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags2).await?;
-        println!("IRQFlags2: {:08b}", irq2);
-        timer.sleep(Duration::from_ms(1000)).await?;
-
-        println!("");
-
-        println!("Transmit");
         drivers.ism_radio.transmit()?;
-        timer.sleep(Duration::from_ms(1000)).await?;
-        let mode = read(&drivers.ism_radio, &timer, ism_radio::register::OpMode).await?;
-        println!("Mode:      {:08b}", mode);
+        timer.sleep(Duration::from_ms(20)).await?;
+        //let mode = read(&drivers.ism_radio, &timer, ism_radio::register::OpMode).await?;
 
-        let mut irq1 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags1).await?;
-        println!("IRQFlags1: {:08b}", irq1);
-        let irq2 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags2).await?;
-        println!("IRQFlags2: {:08b}", irq2);
-        timer.sleep(Duration::from_ms(3000)).await?;
-
-        while irq1 & 1 << 7 == 0 {
-            println!("    mode not ready...");
-            irq1 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags1).await?;
-            timer.sleep(Duration::from_ms(20)).await?;
+        let mut irq2 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags2).await?;
+        if irq2 & 1 << 3 == 0 {
+            println!("Waiting for packet to be sent.");
+        }
+        while irq2 & 1 << 3 == 0 {
+            timer.sleep(Duration::from_ms(30)).await?;
+            irq2 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags2).await?;
         }
 
-        println!("");
+        drivers.ism_radio.standby()?;
+        timer.sleep(Duration::from_ms(250)).await?;
+        //let mode = read(&drivers.ism_radio, &timer, ism_radio::register::OpMode).await?;
+
+        let mut irq1 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags1).await?;
+        timer.sleep(Duration::from_ms(50)).await?;
+
+        if irq1 & 1 << 7 == 0 {
+            println!("Waiting to enter standby mode.");
+        }
+        while irq1 & 1 << 7 == 0 {
+            irq1 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags1).await?;
+            timer.sleep(Duration::from_ms(50)).await?;
+        }
+
+        timer.sleep(Duration::from_ms(500)).await?;
     }
 }
 
