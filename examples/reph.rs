@@ -62,18 +62,20 @@ async fn main() -> TockResult<()> {
         drivers.ism_radio.sample_fill(0b10010110, 64)?;
         timer.sleep(Duration::from_ms(100)).await?;
 
+        led1.on()?;
         drivers.ism_radio.transmit()?;
         timer.sleep(Duration::from_ms(20)).await?;
         //let mode = read(&drivers.ism_radio, &timer, ism_radio::register::OpMode).await?;
 
         let mut irq2 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags2).await?;
-        if irq2 & 1 << 3 == 0 {
-            println!("Waiting for packet to be sent.");
-        }
+        // if irq2 & 1 << 3 == 0 {
+        //     println!("Waiting for packet to be sent.");
+        // }
         while irq2 & 1 << 3 == 0 {
             timer.sleep(Duration::from_ms(30)).await?;
             irq2 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags2).await?;
         }
+        led1.off()?;
 
         drivers.ism_radio.standby()?;
         timer.sleep(Duration::from_ms(250)).await?;
@@ -82,9 +84,9 @@ async fn main() -> TockResult<()> {
         let mut irq1 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags1).await?;
         timer.sleep(Duration::from_ms(50)).await?;
 
-        if irq1 & 1 << 7 == 0 {
-            println!("Waiting to enter standby mode.");
-        }
+        // if irq1 & 1 << 7 == 0 {
+        //     println!("Waiting to enter standby mode.");
+        // }
         while irq1 & 1 << 7 == 0 {
             irq1 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags1).await?;
             timer.sleep(Duration::from_ms(50)).await?;
