@@ -26,9 +26,6 @@ async fn main() -> TockResult<()> {
     timer.sleep(Duration::from_ms(100)).await?;
     drivers.ism_radio.standby()?;
 
-    println!("Energy account is available: {}", drivers.energy_account.is_available()?);
-    println!("Current value: {}", drivers.energy_account.total_usage()?);
-
     // Radio configuration ==============================
     // - disable AES
     modify(&drivers.ism_radio,
@@ -51,42 +48,15 @@ async fn main() -> TockResult<()> {
           64).await?;
 
     // Enumerate registers and show their values.
-    // println!("enumerating registers...");
-    // for addr in 0x3eu8..=0x42 {
-    //     let val = read(&drivers.ism_radio, &timer, addr).await?;
-    //     println!("{:02X} | {:02X} | {:08b}", addr, val, val);
-    // }
-
-    // for (addr, val) in &settings {
-    //     write(&drivers.ism_radio, &timer, *addr, *val).await?;
-    // }
-
-    // println!("enumerating registers...");
-    // for addr in 0x3eu8..=0x42 {
-    //     let val = read(&drivers.ism_radio, &timer, addr).await?;
-    //     println!("{:02X} | {:02X} | {:08b}", addr, val, val);
-    // }
-
-    // for (addr, _val) in settings.iter() {
-    //     write(&drivers.ism_radio, &timer, *addr, *val).await?;
-
-    //     let x = read(&drivers.ism_radio, &timer, *addr).await?;
-    //     println!("{:x}: {:x}", *addr, x);
-    // }
-
-    // for setting in settings.iter() {
-    //     while drivers.ism_radio.status()? != 0 {
-    //         timer.sleep(Duration::from_ms(50)).await?;
-    //         // println!("still busy...");
-    //     }
-
-    //     println!("setting {:x} to {:x}", setting.0, setting.1);
-    //     drivers.ism_radio.write(setting.0, setting.1)?;
-    //     timer.sleep(Duration::from_ms(50)).await?;
-    // }
+    println!("enumerating registers...");
+    for addr in 0x27u8..=0x42 {
+        let val = read(&drivers.ism_radio, &timer, addr).await?;
+        println!("{:02X} | {:02X} | {:08b}", addr, val, val);
+    }
 
     println!("setup complete\n");
 
+    led1.on()?;
     loop {
         println!("Standby");
         drivers.ism_radio.standby()?;
@@ -103,12 +73,7 @@ async fn main() -> TockResult<()> {
         while irq1 & 1 << 7 == 0 {
             println!("    mode not ready...");
             irq1 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags1).await?;
-            timer.sleep(Duration::from_ms(250)).await?;
-        }
-
-        for _i in 0..10 {
-            println!("Energy: {}", drivers.energy_account.total_usage()?);
-            timer.sleep(Duration::from_ms(150)).await?;
+            timer.sleep(Duration::from_ms(20)).await?;
         }
 
         println!("");
@@ -121,7 +86,7 @@ async fn main() -> TockResult<()> {
         println!("IRQFlags1: {:08b}", irq1);
         let irq2 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags2).await?;
         println!("IRQFlags2: {:08b}", irq2);
-        timer.sleep(Duration::from_ms(2000)).await?;
+        timer.sleep(Duration::from_ms(1000)).await?;
 
         println!("");
 
@@ -140,12 +105,7 @@ async fn main() -> TockResult<()> {
         while irq1 & 1 << 7 == 0 {
             println!("    mode not ready...");
             irq1 = read(&drivers.ism_radio, &timer, ism_radio::register::IRQFlags1).await?;
-            timer.sleep(Duration::from_ms(250)).await?;
-        }
-
-        for _i in 0..10 {
-            println!("Energy: {}", drivers.energy_account.total_usage()?);
-            timer.sleep(Duration::from_ms(150)).await?;
+            timer.sleep(Duration::from_ms(20)).await?;
         }
 
         println!("");
